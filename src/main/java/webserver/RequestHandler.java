@@ -9,9 +9,14 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.nio.file.Files;
+import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import db.DataBase;
+import model.User;
+import util.HttpRequestUtils;
 
 public class RequestHandler extends Thread {
     private static final Logger log = LoggerFactory.getLogger(RequestHandler.class);
@@ -37,15 +42,34 @@ public class RequestHandler extends Thread {
     		}
     		
     		String[] tokens = line.split(" ");
+    		String requestPath = tokens[1];;
+    		String params = "";
+    		
+    		//get 방식으로 param 넘어온 경우
+    		if(tokens[0].equals("GET")) {
+	    		String url = tokens[1];
+	    		int index = url.indexOf("?");
+	    		if(index != -1) {
+		    		requestPath = url.substring(0, index);
+		    		params = url.substring(index+1);
+		    		Map<String, String> userData = HttpRequestUtils.parseQueryString(params);
+		    		User user = new User(userData.get("userId"), userData.get("password"), userData.get("name"), userData.get("email"));
+		    		log.debug("User class data {}",user);
+		    		DataBase.addUser(user);
+	    		}
+    		} else if(tokens[0].equals("POST")) {
+    			
+    		}
     		
     		while(!line.equals("")) {
     			line = br.readLine();
     			log.debug("header : {}",line);
     		}
     		
+    		//응답 데이터 만들어서 응답함
             DataOutputStream dos = new DataOutputStream(out);
-            //byte[] body = "Hello WorldTest".getBytes();
-            byte[] body = Files.readAllBytes(new File("./webapp" + tokens[1]).toPath());
+            //byte[] body = "Hello WorldTest".getBytes();    //서버 동작 테스트용
+            byte[] body = Files.readAllBytes(new File("./webapp" + requestPath).toPath());
             response200Header(dos, body.length);
             responseBody(dos, body);
         } catch (IOException e) {
