@@ -76,6 +76,10 @@ public class RequestHandler extends Thread {
 	    		User user = new User(userData.get("userId"), userData.get("password"), 
 	    								userData.get("name"), userData.get("email"));
 	    		log.debug("User class data {}",user);
+	    		
+	    		//응답 데이터 만들어서 응답함
+                DataOutputStream dos = new DataOutputStream(out);
+                response302Header(dos, "http://localhost:8080/index.html");
     		}
     		else {
     			//응답 데이터 만들어서 응답함
@@ -108,7 +112,16 @@ public class RequestHandler extends Thread {
             log.error(e.getMessage());
         }
     }
-
+    
+	private void response302Header(DataOutputStream dos, String location) {
+	    try {
+	        dos.writeBytes("HTTP/1.1 302 Found \r\n");
+	        dos.writeBytes("Location: " + location + "\r\n");
+	        dos.writeBytes("\r\n");
+	    } catch (IOException e) {
+	        log.error(e.getMessage());
+	    }
+    }
     private void responseBody(DataOutputStream dos, byte[] body) {
         try {
             dos.write(body, 0, body.length);
