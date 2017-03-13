@@ -9,6 +9,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.nio.file.Files;
+import java.util.Collection;
 import java.util.Map;
 
 import org.slf4j.Logger;
@@ -47,13 +48,17 @@ public class RequestHandler extends Thread {
     		String[] tokens = line.split(" ");
     		String url = tokens[1];;
     		String queryString = "";
+    		boolean logined = false;
     		int contentLength = -1;
     		
     		while(!line.equals("")) {
     			line = br.readLine();
     			log.debug("header : {}",line);
     			if(line.contains("Content-Length")) {
-    				contentLength = getHeaderValue(line);
+    				contentLength = getContentLength(line);
+    			}
+    			if(line.contains("Cookie")) {
+    				logined = isLogin(line);
     			}
     		}
 
@@ -104,6 +109,30 @@ public class RequestHandler extends Thread {
 	    		
 	    		
     		}
+    		else if(url.equals("/user/list")) {
+    			if(!logined) {
+    				responseResource(out,"/user/login.html");
+    				return;
+    			}
+				Collection<User> userList = DataBase.findAll();
+				StringBuilder userListOutput = new StringBuilder();
+				userListOutput.append("<table align='center' border='1'>");
+				userListOutput.append("<tr><td>ID</><td>Name</><td>Email</></tr>");
+				for (User user : userList) {
+					userListOutput.append("<tr>");
+					userListOutput.append("<td>" + user.getUserId() + "</>");
+					userListOutput.append("<td>" + user.getName() + "</>");
+					userListOutput.append("<td>" + user.getEmail() + "</>");
+					userListOutput.append("</tr>");
+				}
+				userListOutput.append("</table>");
+
+				DataOutputStream dos = new DataOutputStream(out);
+		        byte[] body = userListOutput.toString().getBytes();
+		        response200Header(dos, body.length);
+    		        responseBody(dos, body);
+    			
+    		}
     		else {
     			//응답 데이터 만들어서 응답함
     			responseResource(out,url);
@@ -115,8 +144,18 @@ public class RequestHandler extends Thread {
             log.error(e.getMessage());
         }
     }
+    
+    private boolean isLogin(String line) {
+    	String[] headerData = line.split(":");
+    	Map<String, String> parameters = HttpRequestUtils.parseCookies(headerData[1].trim());
+    	String value = parameters.get("logined");
+    	if(value == null) {
+    		return false;
+    	}
+    	return Boolean.parseBoolean(value);
+    }
 
-    private int getHeaderValue(String line) {
+    private int getContentLength(String line) {
     	String[] headerData = line.split(":");
     	return Integer.parseInt(headerData[1].trim());
     }
