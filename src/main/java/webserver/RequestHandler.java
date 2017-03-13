@@ -57,14 +57,13 @@ public class RequestHandler extends Thread {
     			}
     		}
 
-    		// 1. url 검사
+    		// 1. url 검사(회원가입)
     		if(url.startsWith("/user/create")) {
     			
     			int index = url.indexOf("?");
     			// 2-1. get방식인 경우
 	    		if(index != -1) {
 		    		queryString = url.substring(index+1);
-		    		//DataBase.addUser(user);
 	    		}
 	    		
 	    		// 2-2. post 방식인 경우
@@ -76,18 +75,38 @@ public class RequestHandler extends Thread {
 	    		User user = new User(userData.get("userId"), userData.get("password"), 
 	    								userData.get("name"), userData.get("email"));
 	    		log.debug("User class data {}",user);
+	    		DataBase.addUser(user);
 	    		
 	    		//응답 데이터 만들어서 응답함
                 DataOutputStream dos = new DataOutputStream(out);
                 response302Header(dos, "http://localhost:8080/index.html");
     		}
+    		else if(url.equals("/user/login")) {
+    			queryString = IOUtils.readData(br, contentLength);
+	    		Map<String, String> params = HttpRequestUtils.parseQueryString(queryString);
+	    		User user = DataBase.findUserById(params.get("userId"));
+	    		log.debug("User class data {}",user);
+	    		
+	    		if(user == null) {
+	    			responseResource(out,"/user/login_failed.html");
+	    			return;
+	    		}
+	    		
+	    		if(user.getPassword().equals(params.get("password"))) {
+	    			//로그인 성공 시 index.html 로 이동
+	                DataOutputStream dos = new DataOutputStream(out);
+	                response302LoginSuccess(dos);
+	    		}
+	    		else {
+	    			//로그인 실패
+	    			responseResource(out,"/user/login_failed.html");
+	    		}
+	    		
+	    		
+    		}
     		else {
     			//응답 데이터 만들어서 응답함
-                DataOutputStream dos = new DataOutputStream(out);
-                //byte[] body = "Hello WorldTest".getBytes();    //서버 동작 테스트용
-                byte[] body = Files.readAllBytes(new File("./webapp" + url).toPath());
-                response200Header(dos, body.length);
-                responseBody(dos, body);
+    			responseResource(out,url);
     		}
     		
     		
@@ -100,6 +119,13 @@ public class RequestHandler extends Thread {
     private int getHeaderValue(String line) {
     	String[] headerData = line.split(":");
     	return Integer.parseInt(headerData[1].trim());
+    }
+    
+    private void responseResource(OutputStream out, String url) throws IOException {
+    	DataOutputStream dos = new DataOutputStream(out);
+        byte[] body = Files.readAllBytes(new File("./webapp" + url).toPath());
+        response200Header(dos, body.length);
+        responseBody(dos, body);
     }
     
     private void response200Header(DataOutputStream dos, int lengthOfBodyContent) {
@@ -115,13 +141,25 @@ public class RequestHandler extends Thread {
     
 	private void response302Header(DataOutputStream dos, String location) {
 	    try {
-	        dos.writeBytes("HTTP/1.1 302 Found \r\n");
+	        dos.writeBytes("HTTP/1.1 302 Redirect \r\n");
 	        dos.writeBytes("Location: " + location + "\r\n");
 	        dos.writeBytes("\r\n");
 	    } catch (IOException e) {
 	        log.error(e.getMessage());
 	    }
     }
+	
+	private void response302LoginSuccess(DataOutputStream dos) {
+	    try {
+	        dos.writeBytes("HTTP/1.1 302 Redirect \r\n");
+	        dos.writeBytes("Set-Cookie: logined=true \r\n");
+	        dos.writeBytes("Location: /index.html \r\n");
+	        dos.writeBytes("\r\n");
+	    } catch (IOException e) {
+	        log.error(e.getMessage());
+	    }
+    }
+	
     private void responseBody(DataOutputStream dos, byte[] body) {
         try {
             dos.write(body, 0, body.length);
