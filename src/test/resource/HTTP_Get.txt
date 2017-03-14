@@ -1,0 +1,4 @@
+GET /user/create?userId=aaa&password=bbb&name=ccc HTTP/1.1
+Host: localhost:8080
+Connection: kepp-alive
+Accept: */*
