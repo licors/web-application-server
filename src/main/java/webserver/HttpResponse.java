@@ -88,6 +88,7 @@ public class HttpResponse {
 		Set<String> keys = sendHeaderList.keySet();
 		for (String key : keys) {
 			dos.writeBytes(key + ": " + sendHeaderList.get(key) + "\r\n");
+			log.debug("response header : {}", key + ": " + sendHeaderList.get(key));
 		}
 	}
 }
