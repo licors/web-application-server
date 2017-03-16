@@ -5,11 +5,10 @@ import java.io.FileOutputStream;
 import java.io.OutputStream;
 
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
+import webserver.http.HttpResponse;
 
 public class HttpResponseTest {
-	private static final Logger log = LoggerFactory.getLogger(HttpResponseTest.class);
 	private final String testDirectoryPath = "./src/test/resource/";
 	
 	@Test
