@@ -14,6 +14,7 @@ import webserver.controller.Controller;
 import webserver.controller.CreateUserController;
 import webserver.controller.ListUserController;
 import webserver.controller.LoginController;
+import webserver.controller.RequestMapping;
 import webserver.http.HttpRequest;
 import webserver.http.HttpResponse;
 
@@ -34,12 +35,8 @@ public class RequestHandler extends Thread {
         	HttpRequest request = new HttpRequest(in);
         	HttpResponse response = new HttpResponse(out);
         	String url = request.getPath();
-        	Map<String, Controller> controllers = new HashMap<>();
-        	controllers.put("/user/create", new CreateUserController());
-        	controllers.put("/user/list", new ListUserController());
-        	controllers.put("/user/login", new LoginController());
         	        	
-        	Controller controller = controllers.get(url);
+        	Controller controller = RequestMapping.getController(url);
         	if(controller == null) {
         		response.forward(url);
         		return;
